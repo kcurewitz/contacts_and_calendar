@@ -5,9 +5,9 @@ import collections
 import vobject
 import csv
 
-contacts_file = "contact-data/WO_contacts.vcf"
-#contacts_file = "contact-data/all.vcf"
-output_csv = "contact-data/WO_contacts.csv"
+contacts_file = "./contact-data/WO_contacts.vcf"
+#contacts_file = "./contact-data/all.vcf"
+output_csv = "./contact-data/WO_contacts.csv"
 
 def parse_phone(phone):
     # Remove all non-digit characters
