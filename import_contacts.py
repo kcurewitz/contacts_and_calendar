@@ -40,13 +40,15 @@ with open(contacts_file, "r") as in_f:
             name = vcard.contents["fn"][0].value
             phone = ""; email = ""; street = ""; error= ""
             try:
+                p_count = 0
+                p_multi = len(vcard.contents["tel"]) > 1
                 for tel in vcard.contents["tel"]:
-                    if (phone == ""):
-                        phone = phone_format(tel.value) 
-                        #+ " (" + tel.type_param[0] + ")"
-                    else:
-                        phone += " " + phone_format(tel.value) 
-                        #+ " (" + tel.type_param[0] + ")"
+                    p_count += 1
+                    if (p_count > 1):
+                        phone += " "
+                    phone += phone_format(tel.value) 
+                    if p_multi:
+                        phone += " (" + tel.type_param[0].lower() + ")"
             except KeyError:
                 error += " -> no phone found"
             try:
