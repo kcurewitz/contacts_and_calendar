@@ -18,7 +18,8 @@ with open(cal_file, "r") as in_f:
     for vcard in vobject.readComponents(in_f):      # this is a "VCALENDAR"
         for event in vcard.contents["vevent"]:      # this is a "VEVENT"
             try:
-                events[event.dtstart.value.strftime(dt_format_string)] = [event.dtstart.value, event.dtend.value, event.summary.value]
+                events[event.dtstart.value.strftime(dt_format_string)] = \
+                            [event.dtstart.value, event.dtend.value, event.summary.value, event.created.value]
             except AttributeError:
                 print("exception: ", event.summary.value)
 
@@ -26,14 +27,15 @@ print("%d events" % len(events))
 ordered_events = collections.OrderedDict(sorted(events.items()))
 
 with open(output_csv, 'w', encoding='UTF8', newline='') as out_f:
-    header = ['date', 'start', 'end', 'summary']
+    header = ['date', 'start', 'end', 'summary', 'created']
     writer = csv.writer(out_f)
     writer.writerow(header)
     for ev in ordered_events:
         event = [ordered_events[ev][0].strftime(d_format_string), 
                  ordered_events[ev][0].strftime(t_format_string),
                  ordered_events[ev][1].strftime(t_format_string),
-                 ordered_events[ev][2]]
+                 ordered_events[ev][2], 
+                 ordered_events[ev][3].strftime(dt_format_string)]
         writer.writerow(event)
         print(event)
 
