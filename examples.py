@@ -29,3 +29,19 @@ answer2.sort()
 
 print("sorted1: ", answer1)
 print("sorted2: ", answer2)
+
+class foo:
+    """A simple example class"""
+    i = 12345
+
+    def f(self):
+        return 'hello world'
+
+x = foo
+print(foo.__doc__)
+print("id(x) = ", id(x), " type(foo) = ", type(foo))
+x.counter = 1
+while x.counter < 10:
+    x.counter = x.counter * 2
+print(x.counter)
+del x.counter
