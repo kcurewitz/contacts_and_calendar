@@ -6,8 +6,8 @@ import vobject
 import csv
 from collections import namedtuple
 
-contacts_file = "./contact-data/WO_contacts.vcf"
-output_csv = "./contact-data/WO_contacts.csv"
+contacts_file = "../contact-data/WO_contacts.vcf"
+output_csv = "../contact-data/WO_contacts.csv"
 
 def parse_phone(phone):
     # Remove all non-digit characters
@@ -67,11 +67,11 @@ with open(output_csv, 'w', encoding='UTF8', newline='') as out_f:
     header = ['name', 'telephone', 'email', 'address']
     writer = csv.writer(out_f)
     writer.writerow(header)
-    for name in ordered_contacts:
+    for name in ordered_pcontacts:
         contact = [name, ordered_pcontacts[name].tel,
                          ordered_pcontacts[name].email,
                          ordered_pcontacts[name].address]
         writer.writerow(contact)
         print(contact)
 
-print("%d records" % len(contacts))
+print("%d records" % len(pcontacts))
