@@ -6,8 +6,8 @@ import vobject
 import csv
 import datetime
 
-cal_file = "./calendar-data/cal.ics"
-output_csv = "./calendar-data/cal.csv"
+cal_file = "../calendar-data/cal.ics"
+output_csv = "../calendar-data/cal.csv"
 
 events = {}
 dt_format_string = '%Y-%m-%d %H:%M'
