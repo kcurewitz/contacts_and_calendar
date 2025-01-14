@@ -34,7 +34,7 @@ person = namedtuple('name',['tel', 'email', 'address'])
 with open(contacts_file, "r") as in_f:    
     for vcard in vobject.readComponents(in_f):
         if ("fn" in vcard.contents):
-            name = vcard.contents["fn"][0].value
+            name = vcard.contents["fn"][0].value.strip(' ')
             phone, email, street, error = "","","",""
             try:
                 p_count = 0
@@ -47,15 +47,18 @@ with open(contacts_file, "r") as in_f:
                     if p_multi:
                         phone += " (" + tel.type_param[0].lower() + ")"
             except KeyError:
-                error += " -> no phone found"
+                error += " -> no phone"
             try:
                 for em in vcard.contents["email"]:
                     email = em.value
             except KeyError:
-                error += " -> no email found"
+                error += " -> no email"
 
-            if ("adr" in vcard.contents):
-                 street = vcard.contents["adr"][0].value.street
+            try:
+                if ("adr" in vcard.contents):
+                    street = vcard.contents["adr"][0].value.street
+            except KeyError:
+                error += " -> no street address"
 
             pcontacts[name] = person(phone, email, street)
             if (error != ""):
