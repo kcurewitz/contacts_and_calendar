@@ -4,8 +4,11 @@ import sys
 def do_sys():
     import platform
     print(sys.platform)
-    print(platform.iOS_ver(), platform.machine())
-    print(platform.uname(), platform.platform())
+    try:
+        print(platform.iOS_ver(), platform.machine())
+        print(platform.uname(), platform.platform())
+    except AttributeError:
+        pass
 
 def do_lambda():
     list1 = random.sample(range(100,200),10)
@@ -78,10 +81,23 @@ def do_mmap():
         mm.close()
 
 def do_plot():
+    import numpy
+    import matplotlib.pyplot as plt
+    numpy.random.seed(2)
+
+    x = numpy.random.normal(3, 1, 100)
+    y = numpy.random.normal(150, 40, 100) / x
+
+    plt.scatter(x, y)
+    plt.show()
+
+def do_hist():
+    import numpy
     import matplotlib.pyplot as plt
 
-    X = range(10)
-    plt.plot(X, [x*x for x in X])
+    x = numpy.random.normal(5.0, 1.0, 100000)
+
+    plt.hist(x, 100)
     plt.show()
 
 def main() -> int:
@@ -89,7 +105,7 @@ def main() -> int:
     """Echo the input arguments to standard output"""
     phrase = shlex.join(sys.argv)
     print(phrase)
-    prompt = "Enter action (s,l,c,m,p,x): "
+    prompt = "Enter action (s,l,c,m,p,h,x): "
     action = input(prompt)
     while (action != 'x'):
         match action:
@@ -103,6 +119,8 @@ def main() -> int:
                 do_mmap()
             case 'p':
                 do_plot()
+            case 'h':
+                do_hist()
             case _:
                 pass
         action = input(prompt)
