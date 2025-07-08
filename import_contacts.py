@@ -8,6 +8,7 @@ from collections import namedtuple
 
 contacts_file = "../contact-data/WO_contacts.vcf"
 output_csv = "../contact-data/WO_contacts.csv"
+output_email_csv = "../contact-data/WO_contacts_email.csv"
 
 def parse_phone(phone):
     # Remove all non-digit characters
@@ -29,13 +30,13 @@ def phone_format(phone):
     return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
 
 pcontacts = {}
-person = namedtuple('name',['tel', 'email', 'address'])
+person = namedtuple('name',['tel', 'email', 'number', 'address'])
 
 with open(contacts_file, "r") as in_f:    
     for vcard in vobject.readComponents(in_f):
         if ("fn" in vcard.contents):
             name = vcard.contents["fn"][0].value.strip(' ')
-            phone, email, street, error = "","","",""
+            phone, email, number, street, error = "","","","",""
             try:
                 p_count = 0
                 p_multi = len(vcard.contents["tel"]) > 1
@@ -56,25 +57,38 @@ with open(contacts_file, "r") as in_f:
 
             try:
                 if ("adr" in vcard.contents):
-                    street = vcard.contents["adr"][0].value.street
+                    number,street = vcard.contents["adr"][0].value.street.split(" ",1)
+                    #street = street.replace(" ","%")
             except KeyError:
                 error += " -> no street address"
 
-            pcontacts[name] = person(phone, email, street)
+            pcontacts[name] = person(phone, email, number, street)
             if (error != ""):
                 print(name, " ",error)
 
 ordered_pcontacts = collections.OrderedDict(sorted(pcontacts.items()))
 
 with open(output_csv, 'w', encoding='UTF8', newline='') as out_f:
-    header = ['name', 'telephone', 'email', 'address']
+    header = ['name', 'telephone', 'email', 'number', 'address']
     writer = csv.writer(out_f)
     writer.writerow(header)
     for name in ordered_pcontacts:
         contact = [name, ordered_pcontacts[name].tel,
                          ordered_pcontacts[name].email,
+                         ordered_pcontacts[name].number,
                          ordered_pcontacts[name].address]
         writer.writerow(contact)
         print(contact)
+
+with open(output_email_csv, 'w', encoding='UTF8', newline='') as out_f:
+    header = ['email']
+    writer = csv.writer(out_f)
+    writer.writerow(header)
+    for name in ordered_pcontacts:
+        contact = [ordered_pcontacts[name].email]
+        writer.writerow(contact)
+        for name in contact:
+            if len(name) > 0:
+                print(name,",")
 
 print("%d records" % len(pcontacts))
