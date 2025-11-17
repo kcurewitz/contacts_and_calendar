@@ -6,9 +6,9 @@ import vobject
 import csv
 from collections import namedtuple
 
-contacts_file = "./contact-data/WO_contacts.vcf"
-output_csv = "./contact-data/WO_contacts.csv"
-output_email_csv = "./contact-data/WO_contacts_email.csv"
+contacts_file = "../contact-data/WO_contacts.vcf"
+output_csv = "../contact-data/WO_contacts.csv"
+output_email_csv = "../contact-data/WO_contacts_email.csv"
 
 def parse_phone(phone):
     # Remove all non-digit characters
@@ -26,8 +26,8 @@ def parse_phone(phone):
 def phone_format(phone):
     digits = parse_phone(phone)
     if not digits or len(digits) != 10:
-        return "Invalid number"
-    return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
+        return False, "Invalid number"
+    return True, f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
 
 pcontacts = {}
 person = namedtuple('name',['tel', 'email', 'number', 'address'])
@@ -41,12 +41,14 @@ with open(contacts_file, "r") as in_f:
                 p_count = 0
                 p_multi = len(vcard.contents["tel"]) > 1
                 for tel in vcard.contents["tel"]:
-                    p_count += 1
-                    if (p_count > 1):
-                        phone += " "
-                    phone += phone_format(tel.value) 
-                    if p_multi:
-                        phone += " (" + tel.type_param[0].lower() + ")"
+                    valid_phone, phone_number = phone_format(tel.value)
+                    if (valid_phone):
+                        p_count += 1
+                        if (p_count > 1):
+                            phone += " "
+                        phone += phone_number
+                        if p_multi:
+                            phone += " (" + tel.type_param[0].lower() + ")"
             except KeyError:
                 error += " -> no phone"
             try:
@@ -80,6 +82,7 @@ with open(output_csv, 'w', encoding='UTF8', newline='') as out_f:
         writer.writerow(contact)
         print(contact)
 
+num_emails = 0
 with open(output_email_csv, 'w', encoding='UTF8', newline='') as out_f:
     header = ['email']
     writer = csv.writer(out_f)
@@ -91,5 +94,6 @@ with open(output_email_csv, 'w', encoding='UTF8', newline='') as out_f:
         for name in contact:
             if len(name) > 0:
                 print(name,",")
+                num_emails += 1
 
-print("%d records" % len(pcontacts))
+print(len(pcontacts)," contacts, ",  num_emails, " emails")
