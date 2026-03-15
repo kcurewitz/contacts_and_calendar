@@ -6,9 +6,8 @@ import vobject
 import csv
 from collections import namedtuple
 
-contacts_file = "../contact-data/WO_contacts.vcf"
-output_csv = "../contact-data/WO_contacts.csv"
-output_email_csv = "../contact-data/WO_contacts_email.csv"
+pcontacts = {}
+person = namedtuple('name',['tel', 'email', 'number', 'address', 'phase'])
 
 def parse_phone(phone):
     # Remove all non-digit characters
@@ -29,71 +28,109 @@ def phone_format(phone):
         return False, "Invalid number"
     return True, f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
 
-pcontacts = {}
-person = namedtuple('name',['tel', 'email', 'number', 'address'])
+def read_contacts(contacts_file):
+    with open(contacts_file, "r") as in_f:    
+        for vcard in vobject.readComponents(in_f):
+            if ("fn" in vcard.contents):
+                name = vcard.contents["fn"][0].value.strip(' ')
+                phone, email, number, street, error = "","","","",""
+                try:
+                    p_count = 0
+                    p_multi = len(vcard.contents["tel"]) > 1
+                    for tel in vcard.contents["tel"]:
+                        valid_phone, phone_number = phone_format(tel.value)
+                        if (valid_phone):
+                            p_count += 1
+                            if (p_count > 1):
+                                phone += " "
+                            phone += phone_number
+                            if p_multi:
+                                phone += " (" + tel.type_param[0].lower() + ")"
+                except KeyError:
+                    error += " -> no phone"
+                try:
+                    for em in vcard.contents["email"]:
+                        email = em.value
+                except KeyError:
+                    error += " -> no email"
 
-with open(contacts_file, "r") as in_f:    
-    for vcard in vobject.readComponents(in_f):
-        if ("fn" in vcard.contents):
-            name = vcard.contents["fn"][0].value.strip(' ')
-            phone, email, number, street, error = "","","","",""
-            try:
-                p_count = 0
-                p_multi = len(vcard.contents["tel"]) > 1
-                for tel in vcard.contents["tel"]:
-                    valid_phone, phone_number = phone_format(tel.value)
-                    if (valid_phone):
-                        p_count += 1
-                        if (p_count > 1):
-                            phone += " "
-                        phone += phone_number
-                        if p_multi:
-                            phone += " (" + tel.type_param[0].lower() + ")"
-            except KeyError:
-                error += " -> no phone"
-            try:
-                for em in vcard.contents["email"]:
-                    email = em.value
-            except KeyError:
-                error += " -> no email"
+                try:
+                    if ("adr" in vcard.contents):
+                        number,street = vcard.contents["adr"][0].value.street.split(" ",1)
+                except KeyError:
+                    error += " -> no street address"
 
-            try:
-                if ("adr" in vcard.contents):
-                    number,street = vcard.contents["adr"][0].value.street.split(" ",1)
-                    #street = street.replace(" ","%")
-            except KeyError:
-                error += " -> no street address"
+                phase = 1
+                if street.find("Winged Foot") >= 0:
+                    phase = 2 
+                elif street.find("Pebble Beach") >= 0:
+                    if int(number) >= 34:
+                        phase = 2
+                elif street.find("Spyglass") >= 0:
+                    if int(number) >= 19:
+                        phase = 2
 
-            pcontacts[name] = person(phone, email, number, street)
-            if (error != ""):
-                print(name, " ",error)
+                pcontacts[name] = person(phone, email, number, street, phase)
+                if (error != ""):
+                    print(name, " ",error)
+    return
 
-ordered_pcontacts = collections.OrderedDict(sorted(pcontacts.items()))
-
-with open(output_csv, 'w', encoding='UTF8', newline='') as out_f:
-    header = ['name', 'telephone', 'email', 'number', 'address']
-    writer = csv.writer(out_f)
-    writer.writerow(header)
-    for name in ordered_pcontacts:
-        contact = [name, ordered_pcontacts[name].tel,
-                         ordered_pcontacts[name].email,
-                         ordered_pcontacts[name].number,
-                         ordered_pcontacts[name].address]
-        writer.writerow(contact)
-        print(contact)
-
-num_emails = 0
-with open(output_email_csv, 'w', encoding='UTF8', newline='') as out_f:
-    header = ['email']
-    writer = csv.writer(out_f)
-    writer.writerow(header)
-    for name in ordered_pcontacts:
-        contact = [ordered_pcontacts[name].email]
-        if len(contact[0]) > 0:
+def write_contacts_csv(ordered_pcontacts, output_csv):
+    with open(output_csv, 'w', encoding='UTF8', newline='') as out_f:
+        header = ['name', 'telephone', 'email', 'number', 'address']
+        writer = csv.writer(out_f)
+        writer.writerow(header)
+        for name in ordered_pcontacts:
+            contact = [name, ordered_pcontacts[name].tel,
+                            ordered_pcontacts[name].email,
+                            ordered_pcontacts[name].number,
+                            ordered_pcontacts[name].address,
+                            ordered_pcontacts[name].phase]
             writer.writerow(contact)
-        for name in contact:
-            if len(name) > 0:
-                print(name,",")
-                num_emails += 1
+            print(contact)
+    return
 
-print(len(pcontacts)," contacts, ",  num_emails, " emails")
+def print_emails(ordered_pcontacts, output_email_csv):
+    # These emails do not to be included in neighborhood email list, but are included in the contact list
+    email_exclusions = ["Kayginnetty@gmail.com"]
+
+    num_emails = 0
+    num_excluded = 0
+    with open(output_email_csv, 'w', encoding='UTF8', newline='') as out_f:
+        header = ['email']
+        writer = csv.writer(out_f)
+        writer.writerow(header)
+        for name in ordered_pcontacts:
+            contact = [ordered_pcontacts[name].email]
+            if len(contact[0]) > 0:
+                writer.writerow(contact)
+            for name in contact:
+                if len(name) > 0:
+                    if name in email_exclusions:
+                        num_excluded += 1
+                    else:
+                        print(name,",")
+                        num_emails += 1
+    return(num_emails, num_excluded)
+
+
+def main() -> int:
+    prefix = "./"
+    contacts_file = prefix+"contact-data/WO_contacts.vcf"
+    output_csv = prefix+"contact-data/WO_contacts.csv"
+    output_email_csv = prefix+"contact-data/WO_contacts_email.csv"
+
+    read_contacts(contacts_file)
+
+    ordered_pcontacts = collections.OrderedDict(sorted(pcontacts.items()))
+
+    write_contacts_csv(ordered_pcontacts, output_csv)
+
+    num_emails, num_excluded = print_emails(ordered_pcontacts, output_email_csv)
+
+    print(len(pcontacts)," contacts, ",  num_emails, " emails, ", num_excluded, " email excluded")
+    return 0
+
+__name__ == '__main__'
+debug = 0
+sys.exit(main())
