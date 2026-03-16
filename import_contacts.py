@@ -30,6 +30,8 @@ def phone_format(phone):
 
 def read_contacts(contacts_file):
     with open(contacts_file, "r") as in_f:    
+        phase_1_count = 0;
+        phase_2_count = 0;
         for vcard in vobject.readComponents(in_f):
             if ("fn" in vcard.contents):
                 name = vcard.contents["fn"][0].value.strip(' ')
@@ -64,35 +66,40 @@ def read_contacts(contacts_file):
                 if street.find("Winged Foot") >= 0:
                     phase = 2 
                 elif street.find("Pebble Beach") >= 0:
-                    if int(number) >= 34:
+                    if int(number) >= 36:
                         phase = 2
                 elif street.find("Spyglass") >= 0:
-                    if int(number) >= 19:
+                    if int(number) >= 21:
                         phase = 2
-
+                if phase == 1:
+                    phase_1_count += 1
+                else:
+                    phase_2_count += 1
                 pcontacts[name] = person(phone, email, number, street, phase)
                 if (error != ""):
                     print(name, " ",error)
+    print("Phase 1: ", phase_1_count, " Phase 2: ", phase_2_count)      # note: units will have up to two contacts
     return
 
-def write_contacts_csv(ordered_pcontacts, output_csv):
+def write_contacts_csv(ordered_pcontacts, output_csv, phases = [1,2]):
     with open(output_csv, 'w', encoding='UTF8', newline='') as out_f:
         header = ['name', 'telephone', 'email', 'number', 'address']
         writer = csv.writer(out_f)
         writer.writerow(header)
         for name in ordered_pcontacts:
-            contact = [name, ordered_pcontacts[name].tel,
-                            ordered_pcontacts[name].email,
-                            ordered_pcontacts[name].number,
-                            ordered_pcontacts[name].address,
-                            ordered_pcontacts[name].phase]
-            writer.writerow(contact)
-            print(contact)
+            if ordered_pcontacts[name].phase in phases:
+                contact = [name, ordered_pcontacts[name].tel,
+                                ordered_pcontacts[name].email,
+                                ordered_pcontacts[name].number,
+                                ordered_pcontacts[name].address,
+                                ordered_pcontacts[name].phase]
+                writer.writerow(contact)
+                print(contact)
     return
 
-def print_emails(ordered_pcontacts, output_email_csv):
+def print_emails(ordered_pcontacts, output_email_csv, phases = [1,2]):
     # These emails do not to be included in neighborhood email list, but are included in the contact list
-    email_exclusions = ["Kayginnetty@gmail.com"]
+    email_exclusions = ["Kayginnetty@gmail.com","Jeff@mboprecast.com", "haopie729@gmail.com"]
 
     num_emails = 0
     num_excluded = 0
@@ -101,16 +108,17 @@ def print_emails(ordered_pcontacts, output_email_csv):
         writer = csv.writer(out_f)
         writer.writerow(header)
         for name in ordered_pcontacts:
-            contact = [ordered_pcontacts[name].email]
-            if len(contact[0]) > 0:
-                writer.writerow(contact)
-            for name in contact:
-                if len(name) > 0:
-                    if name in email_exclusions:
-                        num_excluded += 1
-                    else:
-                        print(name,",")
-                        num_emails += 1
+            if ordered_pcontacts[name].phase in phases:
+                contact = [ordered_pcontacts[name].email]
+                if len(contact[0]) > 0:
+                    writer.writerow(contact)
+                for name in contact:
+                    if len(name) > 0:
+                        if name in email_exclusions:
+                            num_excluded += 1
+                        else:
+                            print(name,",")
+                            num_emails += 1
     return(num_emails, num_excluded)
 
 
@@ -126,9 +134,16 @@ def main() -> int:
 
     write_contacts_csv(ordered_pcontacts, output_csv)
 
-    num_emails, num_excluded = print_emails(ordered_pcontacts, output_email_csv)
+    num_emails = [0 for i in range(2)]
+    num_excluded = [0 for i in range(2)]  
+    print("----------------------Phase 1:")
+    num_emails[0], num_excluded[0] = print_emails(ordered_pcontacts, output_email_csv, [1])
+    print("----------------------Phase 2:")
+    num_emails[1], num_excluded[1] = print_emails(ordered_pcontacts, output_email_csv, [2])
 
-    print(len(pcontacts)," contacts, ",  num_emails, " emails, ", num_excluded, " email excluded")
+    print(len(pcontacts)," contacts")
+    for i in range(2):
+        print("Phase_", i, num_emails[i], " emails, ", num_excluded[i], " email excluded")
     return 0
 
 __name__ == '__main__'
